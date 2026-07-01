@@ -49,9 +49,20 @@
     }
 
     async function api(path, opts) {
-        const res = await fetch(path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opts));
-        if (res.status === 401) { showLogin(); throw new Error('Session expired'); }
+        const res = await fetch(path, Object.assign({
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+        }, opts));
         const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+            // A 401 from the login endpoint means bad credentials, not an
+            // expired session — don't wipe the screen, just report it.
+            if (path.indexOf('/api/login') !== -1) {
+                throw new Error(data.error || 'Incorrect username or password');
+            }
+            showLogin();
+            throw new Error('Session expired');
+        }
         if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
         return data;
     }
