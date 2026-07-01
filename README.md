@@ -16,7 +16,7 @@ I set these for you (change any time — update here *and* in Vercel):
 
 ```
 Username:  stagadmin
-Password:  Redwood-5337664529#
+Password:  Moorfoot-Antler-7042
 ```
 
 Login is a signed, httpOnly cookie (`ss_session`, 8-hour expiry). Credentials
