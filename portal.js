@@ -107,6 +107,7 @@
             items_text: val('cItems'),
             amount_total: toPence(val('cTotal')),
             shipping_total: toPence(val('cShip')),
+            exclude_from_revenue: document.getElementById('cFree').checked,
             shipping_address: {
                 line1: val('cA1'), line2: val('cA2') || null,
                 city: val('cCity'), postal_code: val('cPost'), country: 'GB',
@@ -118,6 +119,7 @@
             toast('Custom order created');
             ['cName', 'cEmail', 'cItems', 'cTotal', 'cShip', 'cA1', 'cA2', 'cCity', 'cPost']
                 .forEach((id) => { document.getElementById(id).value = ''; });
+            document.getElementById('cFree').checked = false;
             await loadDashboard();
             location.hash = '#/orders';
         } catch (e) {
@@ -259,6 +261,7 @@
     function openDrawer(id) {
         const o = ORDERS.find((x) => String(x.id) === String(id));
         if (!o) return;
+        const isCustom = String(o.stripe_session_id || '').startsWith('custom_');
         const addr = o.shipping_address || {};
         const addrLines = [
             o.shipping_name || o.customer_name,
@@ -330,6 +333,14 @@
             <div class="d-block">
                 <h3>Dispatch</h3>
                 ${shipSection}
+            </div>
+
+            <div class="d-block d-admin">
+                <label class="check-row">
+                    <input type="checkbox" data-exclude="${esc(o.id)}" ${o.exclude_from_revenue ? 'checked' : ''}>
+                    Exclude from revenue (freebie / gift)
+                </label>
+                ${isCustom ? `<button class="link-btn danger" data-delete="${esc(o.id)}">Delete this custom order</button>` : ''}
             </div>`;
 
         const shipBtn = $('#drawerBody [data-ship]');
@@ -338,6 +349,10 @@
         if (labelBtn) labelBtn.addEventListener('click', () => printLabel(o.id));
         const unshipBtn = $('#drawerBody [data-unship]');
         if (unshipBtn) unshipBtn.addEventListener('click', () => unship(o.id));
+        const excludeBox = $('#drawerBody [data-exclude]');
+        if (excludeBox) excludeBox.addEventListener('change', () => setExclude(o.id, excludeBox.checked));
+        const deleteBtn = $('#drawerBody [data-delete]');
+        if (deleteBtn) deleteBtn.addEventListener('click', () => deleteOrder(o.id));
 
         const d = $('#drawer');
         d.hidden = false;
@@ -416,6 +431,24 @@
         try {
             await api('/api/ship', { method: 'POST', body: JSON.stringify({ id, action: 'unship' }) });
             toast('Reverted to awaiting dispatch');
+            closeDrawer();
+            await loadDashboard();
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function setExclude(id, value) {
+        try {
+            await api('/api/order-edit', { method: 'POST', body: JSON.stringify({ id, action: 'exclude', value }) });
+            toast(value ? 'Excluded from revenue' : 'Counted in revenue');
+            await loadDashboard();
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function deleteOrder(id) {
+        if (!window.confirm('Delete this custom order? This cannot be undone.')) return;
+        try {
+            await api('/api/order-edit', { method: 'POST', body: JSON.stringify({ id, action: 'delete' }) });
+            toast('Order deleted');
             closeDrawer();
             await loadDashboard();
         } catch (e) { toast(e.message, true); }

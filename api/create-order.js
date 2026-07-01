@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
         shipping_name: name,
         shipping_address: body.shipping_address || null,
         status: 'paid', // awaiting dispatch
+        exclude_from_revenue: !!body.exclude_from_revenue,
     };
 
     try {

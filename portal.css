@@ -491,3 +491,15 @@ em { font-style: italic; }
     .mainnav { margin: 12px 0 0; order: 3; width: 100%; }
     .row-2 { grid-template-columns: 1fr; }
 }
+
+/* ── Freebie checkbox + admin controls ──────────────────────── */
+.check-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--oak); cursor: pointer;
+    margin: 6px 0 18px;
+}
+.check-row input { width: 16px; height: 16px; accent-color: var(--oak); cursor: pointer; }
+.d-admin { border-top: 1px solid var(--line); padding-top: 16px; }
+.d-admin .check-row { margin: 0 0 10px; }
+.link-btn.danger { color: var(--danger); }
+.link-btn.danger:hover { text-decoration: underline; }

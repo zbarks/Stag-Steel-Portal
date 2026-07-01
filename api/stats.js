@@ -21,15 +21,15 @@ module.exports = async (req, res) => {
         const supabase = getSupabase();
         const { data: orders, error } = await supabase
             .from('orders')
-            .select('amount_total, amount_subtotal, shipping_total, currency, skus, status, created_at')
+            .select('amount_total, amount_subtotal, shipping_total, currency, skus, status, created_at, exclude_from_revenue')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         const rows = orders || [];
 
-        let revenuePence = 0;      // gross, incl. shipping
-        let productRevenue = 0;    // ex shipping
+        let revenuePence = 0;      // gross, incl. shipping (excludes freebies)
+        let productRevenue = 0;    // ex shipping (excludes freebies)
         let unitsSold = 0;
         let awaitingDispatch = 0;
         const perSku = {};         // sku -> { units, revenuePence }
@@ -44,8 +44,11 @@ module.exports = async (req, res) => {
         }
 
         for (const o of rows) {
-            revenuePence += o.amount_total || 0;
-            productRevenue += (o.amount_subtotal != null ? o.amount_subtotal : (o.amount_total || 0));
+            const excluded = !!o.exclude_from_revenue;
+            if (!excluded) {
+                revenuePence += o.amount_total || 0;
+                productRevenue += (o.amount_subtotal != null ? o.amount_subtotal : (o.amount_total || 0));
+            }
             if (o.status !== 'shipped') awaitingDispatch += 1;
 
             const day = (o.created_at || '').slice(0, 10);

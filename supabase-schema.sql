@@ -36,6 +36,7 @@ create table if not exists public.orders (
     shipping_service        text,      -- e.g. 'rm-tracked-48'
     tracking_number         text,
     label_url          text,
+    exclude_from_revenue boolean not null default false,
     shipped_at              timestamptz,
 
     created_at              timestamptz default now()
