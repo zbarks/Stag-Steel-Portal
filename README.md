@@ -10,18 +10,16 @@ stack (static front-end + Vercel serverless functions) — no Next.js, no PostHo
 
 ---
 
-## Login
+## Access
 
-One system password — no username, no cookies, nothing to expire.
+No login. The dashboard loads as soon as you open the portal URL.
 
-```
-Password:  Moorfoot-Antler-7042
-```
-
-Set it in the `PORTAL_PASSWORD` env var (change it any time — update here and in
-Vercel, then redeploy). The password is checked server-side on every request via
-an `x-portal-key` header; it's never stored in the shipped code. The browser
-keeps it for the current tab only (sessionStorage), so closing the tab logs out.
+The data endpoints still carry a built-in access key (hardcoded in `lib/auth.js`
+and `portal.js`, currently `stagsteel`) so `/api/orders` isn't wide open to
+anyone who guesses the URL — but this is light protection, not real security.
+Since the orders table holds customer names and addresses, **keep the repo
+private and don't share the portal URL.** If you ever want a real login back,
+say the word.
 
 ## Environment variables (Vercel → Portal project → Settings → Env Vars)
 

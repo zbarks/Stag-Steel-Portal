@@ -48,14 +48,9 @@
         }, 3200);
     }
 
-    // The system password. Held in memory for this page; mirrored to
-    // sessionStorage only as a convenience so a refresh can stay logged in.
-    let KEY = '';
-    (function () { try { KEY = sessionStorage.getItem('ss_key') || ''; } catch (_) {} })();
-    function setKey(v) {
-        KEY = v || '';
-        try { v ? sessionStorage.setItem('ss_key', v) : sessionStorage.removeItem('ss_key'); } catch (_) {}
-    }
+    // Built-in access key — baked in, sent automatically on every request.
+    // Matches the value in lib/auth.js. No login screen, no password prompt.
+    const KEY = 'stagsteel';
 
     async function api(path, opts) {
         const o = Object.assign({ headers: {} }, opts);
@@ -70,41 +65,13 @@
         return data;
     }
 
-    // ---------- auth ----------
+    // ---------- screens ----------
     function showLogin() { $('#app').hidden = true; $('#login').hidden = false; }
     function showApp() { $('#login').hidden = true; $('#app').hidden = false; }
 
-    async function doLogin() {
-        const btn = $('#loginBtn');
-        const err = $('#loginError');
-        err.hidden = true;
-        btn.disabled = true; btn.textContent = 'Signing in…';
-        const pw = $('#password').value;
-        setKey(pw); // carried via x-portal-key on every request
-        try {
-            await api('/api/login', {
-                method: 'POST',
-                body: JSON.stringify({ password: pw }),
-            });
-            // Password correct → show the dashboard NOW and keep it shown.
-            // Any data-loading failure appears as a banner, never a bounce.
-            $('#password').value = '';
-            showApp();
-            loadDashboard();
-        } catch (e) {
-            setKey('');
-            err.textContent = e.status === 401 ? 'Incorrect password' : (e.message || 'Sign in failed');
-            err.hidden = false;
-        } finally {
-            btn.disabled = false; btn.textContent = 'Sign in';
-        }
-    }
-
-    async function doLogout() {
-        setKey('');
-        try { await api('/api/logout', { method: 'POST' }); } catch (_) {}
-        showLogin();
-    }
+    // No login flow anymore — the dashboard loads directly. Logout just
+    // reloads the page.
+    function doLogout() { location.reload(); }
 
     function showBanner(msg) {
         let b = document.getElementById('dataBanner');
@@ -353,9 +320,6 @@
 
     // ---------- wire up ----------
     function init() {
-        $('#loginBtn').addEventListener('click', doLogin);
-        $$('#login input').forEach((inp) =>
-            inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); }));
         $('#logoutBtn').addEventListener('click', doLogout);
         $('#refreshBtn').addEventListener('click', () => { loadDashboard(); toast('Refreshed'); });
         $$('[data-close]').forEach((el) => el.addEventListener('click', closeDrawer));
@@ -371,11 +335,9 @@
             });
         });
 
-        // Decide initial screen
-        api('/api/session').then((s) => {
-            if (s.authed) { showApp(); loadDashboard(); }
-            else showLogin();
-        }).catch(showLogin);
+        // No login — straight to the dashboard.
+        showApp();
+        loadDashboard();
     }
 
     document.addEventListener('DOMContentLoaded', init);
