@@ -48,24 +48,25 @@
         }, 3200);
     }
 
-    // The system password, kept for this tab only. No cookies involved.
-    function getKey() { try { return sessionStorage.getItem('ss_key') || ''; } catch (_) { return ''; } }
-    function setKey(v) { try { v ? sessionStorage.setItem('ss_key', v) : sessionStorage.removeItem('ss_key'); } catch (_) {} }
+    // The system password. Held in memory for this page; mirrored to
+    // sessionStorage only as a convenience so a refresh can stay logged in.
+    let KEY = '';
+    (function () { try { KEY = sessionStorage.getItem('ss_key') || ''; } catch (_) {} })();
+    function setKey(v) {
+        KEY = v || '';
+        try { v ? sessionStorage.setItem('ss_key', v) : sessionStorage.removeItem('ss_key'); } catch (_) {}
+    }
 
     async function api(path, opts) {
         const o = Object.assign({ headers: {} }, opts);
-        o.headers = Object.assign({ 'Content-Type': 'application/json', 'x-portal-key': getKey() }, o.headers);
+        o.headers = Object.assign({ 'Content-Type': 'application/json', 'x-portal-key': KEY }, o.headers);
         const res = await fetch(path, o);
         const data = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-            if (path.indexOf('/api/login') !== -1) {
-                throw new Error(data.error || 'Incorrect password');
-            }
-            setKey('');
-            showLogin();
-            throw new Error('Session expired');
+        if (!res.ok) {
+            const err = new Error(data.error || ('HTTP ' + res.status));
+            err.status = res.status;
+            throw err;
         }
-        if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
         return data;
     }
 
@@ -79,18 +80,20 @@
         err.hidden = true;
         btn.disabled = true; btn.textContent = 'Signing in…';
         const pw = $('#password').value;
-        setKey(pw); // so the login request carries it via the x-portal-key header
+        setKey(pw); // carried via x-portal-key on every request
         try {
             await api('/api/login', {
                 method: 'POST',
                 body: JSON.stringify({ password: pw }),
             });
+            // Password correct → show the dashboard NOW and keep it shown.
+            // Any data-loading failure appears as a banner, never a bounce.
             $('#password').value = '';
             showApp();
-            await loadDashboard();
+            loadDashboard();
         } catch (e) {
             setKey('');
-            err.textContent = e.message || 'Sign in failed';
+            err.textContent = e.status === 401 ? 'Incorrect password' : (e.message || 'Sign in failed');
             err.hidden = false;
         } finally {
             btn.disabled = false; btn.textContent = 'Sign in';
@@ -103,10 +106,27 @@
         showLogin();
     }
 
+    function showBanner(msg) {
+        let b = document.getElementById('dataBanner');
+        if (!b) {
+            b = document.createElement('div');
+            b.id = 'dataBanner';
+            b.style.cssText = 'margin:0 0 16px;padding:12px 16px;border-radius:8px;'
+                + 'background:#f8ece1;color:#8a4b2f;'
+                + 'border:1px solid #e2c3ad;font-size:14px;';
+            const app = document.getElementById('app');
+            app.insertBefore(b, app.firstChild);
+        }
+        b.textContent = msg;
+        b.hidden = false;
+    }
+    function clearBanner() { const b = document.getElementById('dataBanner'); if (b) b.hidden = true; }
+
     // ---------- dashboard ----------
     async function loadDashboard() {
         try {
             const [stats, ordersRes] = await Promise.all([api('/api/stats'), api('/api/orders')]);
+            clearBanner();
             ORDERS = ordersRes.orders || [];
             renderStats(stats);
             renderProducts(stats.products);
@@ -114,7 +134,14 @@
             renderStripe(stats.stripeBalance);
             renderOrders();
         } catch (e) {
-            if (e.message !== 'Session expired') toast(e.message, true);
+            // Stay on the dashboard; surface the real reason.
+            if (e.status === 401) {
+                showBanner('Data request was rejected (401). The password is set, but the '
+                    + 'server didn’t accept it for data calls — check PORTAL_PASSWORD is set and redeployed.');
+            } else {
+                showBanner('Couldn’t load orders: ' + (e.message || 'unknown error')
+                    + '. If this mentions a missing table, run supabase-schema.sql in Supabase.');
+            }
         }
     }
 
