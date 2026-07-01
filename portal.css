@@ -442,3 +442,52 @@ em { font-style: italic; }
     .wrap { padding: 20px 16px 60px; }
     .topbar-inner { padding: 14px 16px; }
 }
+
+/* ── Multi-page nav ─────────────────────────────────────────── */
+.mainnav { display: flex; gap: 4px; margin: 0 auto 0 32px; }
+.navlink {
+    font-size: 14px; color: var(--mist); text-decoration: none;
+    padding: 8px 14px; border-radius: 999px; transition: all .15s;
+    white-space: nowrap;
+}
+.navlink:hover { color: var(--oak); background: var(--earth-stone); }
+.navlink.is-active { color: var(--cream); background: var(--oak); }
+.view { animation: fade .2s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ── Live status pill ───────────────────────────────────────── */
+.live-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--mist);
+    padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+}
+.live-pill .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--mist); transition: background .2s;
+}
+.live-pill.is-live { color: var(--shipped); border-color: rgba(74,106,77,0.3); }
+.live-pill.is-live .dot { background: var(--shipped); box-shadow: 0 0 0 0 rgba(74,106,77,0.5); animation: pulse 2s infinite; }
+.live-pill.is-down { color: var(--danger); border-color: rgba(162,59,59,0.3); }
+.live-pill.is-down .dot { background: var(--danger); }
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(74,106,77,0.45); }
+    70% { box-shadow: 0 0 0 6px rgba(74,106,77,0); }
+    100% { box-shadow: 0 0 0 0 rgba(74,106,77,0); }
+}
+
+/* ── Custom order form ──────────────────────────────────────── */
+.custom-intro { color: var(--mist); font-size: 14px; margin: 0 0 22px; max-width: 60ch; }
+.custom-form { max-width: 640px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.ship-to-h { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--mist); margin: 26px 0 14px; }
+
+/* ── Manual ship fallback (collapsed) ───────────────────────── */
+.manual-ship { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.manual-ship summary { font-size: 13px; color: var(--mist); cursor: pointer; }
+.manual-ship summary:hover { color: var(--oak); }
+.manual-ship .field { margin-top: 12px; }
+
+@media (max-width: 640px) {
+    .mainnav { margin: 12px 0 0; order: 3; width: 100%; }
+    .row-2 { grid-template-columns: 1fr; }
+}

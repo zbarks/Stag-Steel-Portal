@@ -50,6 +50,21 @@ storefront's webhook writes orders; the portal reads and updates them.
 
 ---
 
+## Pages
+
+- **Overview** — revenue, orders, units, awaiting-dispatch, sold-by-product, 14-day chart, live Stripe balance. A green **Live** pill shows the store connection is active; the dashboard auto-refreshes every 20s.
+- **Orders** — every order; click one to see the customer/address/items and dispatch it.
+- **Custom order** — create a bespoke/off-site order by hand; it then behaves like any other order (you can print a label for it).
+
+## Dispatch & Royal Mail
+
+Open an order → choose a service + weight → **Print shipping label**. You're asked
+to confirm (labels are paid), then the portal calls the Royal Mail Click & Drop
+API, saves the tracking number, opens the label PDF, and marks the order sent.
+There's a "enter tracking by hand" fallback too. Needs `ROYAL_MAIL_API_KEY` — see
+setup. Incoming orders are NEVER auto-labelled; nothing is bought until you press
+the button and confirm.
+
 ## What it shows
 
 - **Revenue**, total orders, units sold, and how many are **awaiting dispatch**

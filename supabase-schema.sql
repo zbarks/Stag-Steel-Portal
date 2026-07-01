@@ -35,6 +35,7 @@ create table if not exists public.orders (
     status                  text default 'paid',  -- 'paid' → 'shipped'
     shipping_service        text,      -- e.g. 'rm-tracked-48'
     tracking_number         text,
+    label_url          text,
     shipped_at              timestamptz,
 
     created_at              timestamptz default now()

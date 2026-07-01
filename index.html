@@ -11,64 +11,84 @@
 </head>
 <body>
 
-    <!-- ── LOGIN ─────────────────────────────────────────────── -->
-    <div id="login" class="login-screen" hidden>
-        <div class="login-card">
-            <span class="login-eyebrow">Stag &amp; Steel</span>
-            <h1>Orders</h1>
-            <p class="login-sub">Enter the password to manage orders and dispatch.</p>
-            <div class="field">
-                <label for="password">Password</label>
-                <input id="password" type="password" autocomplete="current-password">
-            </div>
-            <p id="loginError" class="login-error" hidden></p>
-            <button id="loginBtn" class="btn-primary">Sign in</button>
-        </div>
-        <p class="login-foot">Stag &amp; Steel · Internal · build v5 (no login)</p>
-    </div>
-
     <!-- ── DASHBOARD ─────────────────────────────────────────── -->
     <div id="app" hidden>
         <header class="topbar">
             <div class="topbar-inner">
                 <span class="brand">Stag &amp; Steel <em>— Orders</em></span>
+                <nav class="mainnav">
+                    <a href="#/overview" data-nav="overview" class="navlink is-active">Overview</a>
+                    <a href="#/orders" data-nav="orders" class="navlink">Orders</a>
+                    <a href="#/custom" data-nav="custom" class="navlink">Custom order</a>
+                </nav>
                 <div class="topbar-right">
-                    <button id="refreshBtn" class="btn-ghost" title="Refresh">Refresh</button>
-                    <button id="logoutBtn" class="btn-ghost">Sign out</button>
+                    <span id="livePill" class="live-pill" title="Live connection to your store">
+                        <span class="dot"></span><span class="live-text">Connecting…</span>
+                    </span>
                 </div>
             </div>
         </header>
 
         <main class="wrap">
-            <!-- Stat cards -->
-            <section class="stats" id="statCards"></section>
-
-            <!-- Two columns: products + activity -->
-            <section class="split">
-                <div class="panel">
-                    <div class="panel-head"><h2>Sold by product</h2></div>
-                    <div id="productTable" class="mini-table"></div>
-                </div>
-                <div class="panel">
-                    <div class="panel-head"><h2>Last 14 days</h2></div>
-                    <div id="sparkline" class="sparkline"></div>
-                    <div id="stripeBalance" class="stripe-balance"></div>
-                </div>
-            </section>
-
-            <!-- Orders -->
-            <section class="panel orders-panel">
-                <div class="panel-head">
-                    <h2>Orders</h2>
-                    <div class="filters" id="filters">
-                        <button class="chip is-active" data-filter="all">All</button>
-                        <button class="chip" data-filter="paid">Awaiting dispatch</button>
-                        <button class="chip" data-filter="shipped">Shipped</button>
+            <!-- ══ OVERVIEW ══ -->
+            <div class="view" id="view-overview">
+                <section class="stats" id="statCards"></section>
+                <section class="split">
+                    <div class="panel">
+                        <div class="panel-head"><h2>Sold by product</h2></div>
+                        <div id="productTable" class="mini-table"></div>
                     </div>
-                </div>
-                <div id="ordersTable" class="orders-table"></div>
-                <div id="ordersEmpty" class="empty" hidden>No orders yet. They'll appear here the moment a checkout completes.</div>
-            </section>
+                    <div class="panel">
+                        <div class="panel-head"><h2>Last 14 days</h2></div>
+                        <div id="sparkline" class="sparkline"></div>
+                        <div id="stripeBalance" class="stripe-balance"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ══ ORDERS ══ -->
+            <div class="view" id="view-orders" hidden>
+                <section class="panel orders-panel">
+                    <div class="panel-head">
+                        <h2>Orders</h2>
+                        <div class="filters" id="filters">
+                            <button class="chip is-active" data-filter="all">All</button>
+                            <button class="chip" data-filter="paid">Awaiting dispatch</button>
+                            <button class="chip" data-filter="shipped">Shipped</button>
+                        </div>
+                    </div>
+                    <div id="ordersTable" class="orders-table"></div>
+                    <div id="ordersEmpty" class="empty" hidden>No orders yet. They'll appear here the moment a checkout completes.</div>
+                </section>
+            </div>
+
+            <!-- ══ CUSTOM ORDER ══ -->
+            <div class="view" id="view-custom" hidden>
+                <section class="panel">
+                    <div class="panel-head"><h2>New custom order</h2></div>
+                    <p class="custom-intro">For bespoke pieces or off-site sales. Creates an order in the portal so you can dispatch it like any other. You can print a Royal Mail label after it's created.</p>
+                    <div class="custom-form">
+                        <div class="row-2">
+                            <div class="field"><label>Customer name</label><input id="cName" type="text" placeholder="Jane Smith"></div>
+                            <div class="field"><label>Email (optional)</label><input id="cEmail" type="email" placeholder="jane@example.com"></div>
+                        </div>
+                        <div class="field"><label>What they ordered</label><input id="cItems" type="text" placeholder="e.g. 1× Custom antler corkscrew"></div>
+                        <div class="row-2">
+                            <div class="field"><label>Order total (£)</label><input id="cTotal" type="number" min="0" step="0.01" placeholder="45.00"></div>
+                            <div class="field"><label>Shipping charged (£)</label><input id="cShip" type="number" min="0" step="0.01" placeholder="4.50"></div>
+                        </div>
+                        <h3 class="ship-to-h">Ship to</h3>
+                        <div class="field"><label>Address line 1</label><input id="cA1" type="text"></div>
+                        <div class="field"><label>Address line 2 (optional)</label><input id="cA2" type="text"></div>
+                        <div class="row-2">
+                            <div class="field"><label>City / town</label><input id="cCity" type="text"></div>
+                            <div class="field"><label>Postcode</label><input id="cPost" type="text"></div>
+                        </div>
+                        <p id="customError" class="login-error" hidden></p>
+                        <button id="createOrderBtn" class="btn-primary">Create order</button>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 

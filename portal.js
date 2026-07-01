@@ -11,8 +11,8 @@
     let FILTER = 'all';
 
     const SERVICES = {
-        'rm-tracked-24': 'Royal Mail Tracked 24',
         'rm-tracked-48': 'Royal Mail Tracked 48',
+        'rm-tracked-24': 'Royal Mail Tracked 24',
         'rm-signed-1st': 'Royal Mail Signed For 1st Class',
         'rm-signed-2nd': 'Royal Mail Signed For 2nd Class',
         'rm-special': 'Royal Mail Special Delivery',
@@ -66,12 +66,67 @@
     }
 
     // ---------- screens ----------
-    function showLogin() { $('#app').hidden = true; $('#login').hidden = false; }
-    function showApp() { $('#login').hidden = true; $('#app').hidden = false; }
+    function showApp() { $('#app').hidden = false; }
 
-    // No login flow anymore — the dashboard loads directly. Logout just
-    // reloads the page.
-    function doLogout() { location.reload(); }
+    // No login flow — the dashboard loads directly.
+
+    // ---------- routing ----------
+    function route() {
+        const hash = (location.hash || '#/overview').replace('#/', '');
+        const view = ['overview', 'orders', 'custom'].includes(hash) ? hash : 'overview';
+        ['overview', 'orders', 'custom'].forEach((v) => {
+            const el = document.getElementById('view-' + v);
+            if (el) el.hidden = (v !== view);
+        });
+        $$('.navlink').forEach((a) => a.classList.toggle('is-active', a.dataset.nav === view));
+    }
+
+    // ---------- live status ----------
+    function setLive(state) {
+        const pill = document.getElementById('livePill');
+        if (!pill) return;
+        pill.classList.remove('is-live', 'is-down');
+        const txt = pill.querySelector('.live-text');
+        if (state === 'live') { pill.classList.add('is-live'); txt.textContent = 'Live'; }
+        else if (state === 'down') { pill.classList.add('is-down'); txt.textContent = 'Offline'; }
+        else { txt.textContent = 'Connecting…'; }
+    }
+
+    // ---------- custom order ----------
+    async function createCustomOrder() {
+        const btn = document.getElementById('createOrderBtn');
+        const err = document.getElementById('customError');
+        err.hidden = true;
+        const val = (id) => (document.getElementById(id).value || '').trim();
+        const name = val('cName');
+        if (!name) { err.textContent = 'Add a customer name.'; err.hidden = false; return; }
+        const toPence = (v) => Math.round((parseFloat(v) || 0) * 100);
+        const payload = {
+            customer_name: name,
+            customer_email: val('cEmail') || null,
+            items_text: val('cItems'),
+            amount_total: toPence(val('cTotal')),
+            shipping_total: toPence(val('cShip')),
+            shipping_address: {
+                line1: val('cA1'), line2: val('cA2') || null,
+                city: val('cCity'), postal_code: val('cPost'), country: 'GB',
+            },
+        };
+        btn.disabled = true; btn.textContent = 'Creating…';
+        try {
+            await api('/api/create-order', { method: 'POST', body: JSON.stringify(payload) });
+            toast('Custom order created');
+            ['cName', 'cEmail', 'cItems', 'cTotal', 'cShip', 'cA1', 'cA2', 'cCity', 'cPost']
+                .forEach((id) => { document.getElementById(id).value = ''; });
+            await loadDashboard();
+            location.hash = '#/orders';
+        } catch (e) {
+            err.textContent = e.message || 'Could not create order';
+            err.hidden = false;
+        } finally {
+            btn.disabled = false; btn.textContent = 'Create order';
+        }
+    }
 
     function showBanner(msg) {
         let b = document.getElementById('dataBanner');
@@ -94,6 +149,7 @@
         try {
             const [stats, ordersRes] = await Promise.all([api('/api/stats'), api('/api/orders')]);
             clearBanner();
+            setLive('live');
             ORDERS = ordersRes.orders || [];
             renderStats(stats);
             renderProducts(stats.products);
@@ -101,10 +157,9 @@
             renderStripe(stats.stripeBalance);
             renderOrders();
         } catch (e) {
-            // Stay on the dashboard; surface the real reason.
+            setLive('down');
             if (e.status === 401) {
-                showBanner('Data request was rejected (401). The password is set, but the '
-                    + 'server didn’t accept it for data calls — check PORTAL_PASSWORD is set and redeployed.');
+                showBanner('Data request was rejected (401). Check the access key in lib/auth.js matches portal.js, then redeploy.');
             } else {
                 showBanner('Couldn’t load orders: ' + (e.message || 'unknown error')
                     + '. If this mentions a missing table, run supabase-schema.sql in Supabase.');
@@ -236,19 +291,23 @@
             shipSection = `
                 <div class="ship-form">
                     <div class="field">
-                        <label for="svc">Service</label>
+                        <label for="svc">Royal Mail service</label>
                         <select id="svc">${opts}</select>
                     </div>
                     <div class="field">
-                        <label for="wt">Parcel weight (grams, optional)</label>
+                        <label for="wt">Parcel weight (grams)</label>
                         <input id="wt" type="number" min="0" step="10" placeholder="e.g. 250">
                     </div>
-                    <div class="field">
-                        <label for="trk">Tracking number</label>
-                        <input id="trk" type="text" placeholder="Paste from Royal Mail">
-                    </div>
-                    <p class="ship-note">Royal Mail label creation isn't wired up yet — for now, enter the tracking number by hand and this marks the order as sent. The customer isn't emailed automatically yet.</p>
-                    <button class="btn-primary" data-ship="${esc(o.id)}">Mark as shipped</button>
+                    <button class="btn-primary" data-label="${esc(o.id)}">Print shipping label</button>
+                    <p class="ship-note">Creates a <b>paid</b> Royal Mail label via the API, marks the order as sent, and gives you the label PDF to print. You'll be asked to confirm first.</p>
+                    <details class="manual-ship">
+                        <summary>Enter tracking by hand instead</summary>
+                        <div class="field">
+                            <label for="trk">Tracking number</label>
+                            <input id="trk" type="text" placeholder="Paste from Royal Mail">
+                        </div>
+                        <button class="link-btn" data-ship="${esc(o.id)}">Mark as sent (no label)</button>
+                    </details>
                 </div>`;
         }
 
@@ -275,6 +334,8 @@
 
         const shipBtn = $('#drawerBody [data-ship]');
         if (shipBtn) shipBtn.addEventListener('click', () => markShipped(o.id));
+        const labelBtn = $('#drawerBody [data-label]');
+        if (labelBtn) labelBtn.addEventListener('click', () => printLabel(o.id));
         const unshipBtn = $('#drawerBody [data-unship]');
         if (unshipBtn) unshipBtn.addEventListener('click', () => unship(o.id));
 
@@ -289,6 +350,34 @@
         setTimeout(() => { d.hidden = true; }, 400);
     }
 
+    async function printLabel(id) {
+        const service = $('#svc').value;
+        const weightGrams = $('#wt').value.trim();
+        const svcName = SERVICES[service] || service;
+        const ok = window.confirm(
+            `Create a PAID Royal Mail label?\n\nService: ${svcName}\n`
+            + `${weightGrams ? 'Weight: ' + weightGrams + 'g\n' : ''}`
+            + `\nThis buys postage on your Royal Mail account and marks the order as sent.`
+        );
+        if (!ok) return;
+        const btn = $('#drawerBody [data-label]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Creating label…'; }
+        try {
+            const r = await api('/api/label', { method: 'POST', body: JSON.stringify({ id, service, weightGrams }) });
+            if (r.labelUrl) {
+                window.open(r.labelUrl, '_blank', 'noopener');
+                toast('Label created — order marked as sent');
+            } else {
+                toast('Order sent to Click & Drop — generate the label there');
+            }
+            closeDrawer();
+            await loadDashboard();
+        } catch (e) {
+            toast(e.message || 'Label failed', true);
+            if (btn) { btn.disabled = false; btn.textContent = 'Print shipping label'; }
+        }
+    }
+
     async function markShipped(id) {
         const btn = $('#drawerBody [data-ship]');
         const service = $('#svc').value;
@@ -300,12 +389,12 @@
                 method: 'POST',
                 body: JSON.stringify({ id, service, tracking, weightGrams }),
             });
-            toast('Order marked as shipped');
+            toast('Order marked as sent');
             closeDrawer();
             await loadDashboard();
         } catch (e) {
             toast(e.message, true);
-            if (btn) { btn.disabled = false; btn.textContent = 'Mark as shipped'; }
+            if (btn) { btn.disabled = false; btn.textContent = 'Mark as sent (no label)'; }
         }
     }
 
@@ -320,8 +409,7 @@
 
     // ---------- wire up ----------
     function init() {
-        $('#logoutBtn').addEventListener('click', doLogout);
-        $('#refreshBtn').addEventListener('click', () => { loadDashboard(); toast('Refreshed'); });
+        document.getElementById('createOrderBtn').addEventListener('click', createCustomOrder);
         $$('[data-close]').forEach((el) => el.addEventListener('click', closeDrawer));
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && $('#drawer').classList.contains('open')) closeDrawer();
@@ -335,9 +423,15 @@
             });
         });
 
+        window.addEventListener('hashchange', route);
+        route();
+
         // No login — straight to the dashboard.
         showApp();
         loadDashboard();
+
+        // Keep it live: refresh from the store every 20s.
+        setInterval(() => { loadDashboard(); }, 20000);
     }
 
     document.addEventListener('DOMContentLoaded', init);
