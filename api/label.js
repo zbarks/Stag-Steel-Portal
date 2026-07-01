@@ -40,6 +40,19 @@ module.exports = async (req, res) => {
         });
     } catch (err) {
         console.error('label error:', err);
+        // Order made it into ChannelShipper but the API couldn't generate the
+        // paid label (e.g. account not permitted / no postage billing yet).
+        // That's not a hard failure — return 200 so the portal shows a calm
+        // "go finish in ChannelShipper" message instead of a red error.
+        if (err.orderImported) {
+            return res.status(200).json({
+                ok: true,
+                imported: true,
+                labelGenerated: false,
+                trackingNumber: err.trackingNumber || null,
+                message: err.message,
+            });
+        }
         const code = err.notConfigured ? 400 : 500;
         return res.status(code).json({ error: err.message || 'Could not create label' });
     }

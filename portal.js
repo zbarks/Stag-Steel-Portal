@@ -382,13 +382,19 @@
             if (r.labelUrl) {
                 window.open(r.labelUrl, '_blank', 'noopener');
                 toast('Label created — order marked as sent');
+                closeDrawer();
             } else if (r.labelBase64) {
                 openPdfBase64(r.labelBase64);
                 toast('Label created — order marked as sent');
+                closeDrawer();
+            } else if (r.imported && r.labelGenerated === false) {
+                // Order is in ChannelShipper with Tracked 48 applied; finish there.
+                toast('Sent to ChannelShipper with Tracked 48 — generate the label there', false);
+                if (btn) { btn.disabled = false; btn.textContent = 'Print shipping label'; }
             } else {
                 toast('Order sent to Click & Drop — generate the label there');
+                closeDrawer();
             }
-            closeDrawer();
             await loadDashboard();
         } catch (e) {
             toast(e.message || 'Label failed', true);
