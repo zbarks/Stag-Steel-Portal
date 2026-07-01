@@ -1,0 +1,11 @@
+{
+  "name": "stag-steel-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stag & Steel — internal orders & dispatch portal (password protected).",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "stripe": "^17.0.0"
+  }
+}

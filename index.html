@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stag &amp; Steel — Orders</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+    <!-- ── LOGIN ─────────────────────────────────────────────── -->
+    <div id="login" class="login-screen" hidden>
+        <div class="login-card">
+            <span class="login-eyebrow">Stag &amp; Steel</span>
+            <h1>Orders</h1>
+            <p class="login-sub">Sign in to manage orders and dispatch.</p>
+            <div class="field">
+                <label for="username">Username</label>
+                <input id="username" type="text" autocomplete="username" autocapitalize="off" spellcheck="false">
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input id="password" type="password" autocomplete="current-password">
+            </div>
+            <p id="loginError" class="login-error" hidden></p>
+            <button id="loginBtn" class="btn-primary">Sign in</button>
+        </div>
+        <p class="login-foot">Stag &amp; Steel · Internal</p>
+    </div>
+
+    <!-- ── DASHBOARD ─────────────────────────────────────────── -->
+    <div id="app" hidden>
+        <header class="topbar">
+            <div class="topbar-inner">
+                <span class="brand">Stag &amp; Steel <em>— Orders</em></span>
+                <div class="topbar-right">
+                    <button id="refreshBtn" class="btn-ghost" title="Refresh">Refresh</button>
+                    <button id="logoutBtn" class="btn-ghost">Sign out</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="wrap">
+            <!-- Stat cards -->
+            <section class="stats" id="statCards"></section>
+
+            <!-- Two columns: products + activity -->
+            <section class="split">
+                <div class="panel">
+                    <div class="panel-head"><h2>Sold by product</h2></div>
+                    <div id="productTable" class="mini-table"></div>
+                </div>
+                <div class="panel">
+                    <div class="panel-head"><h2>Last 14 days</h2></div>
+                    <div id="sparkline" class="sparkline"></div>
+                    <div id="stripeBalance" class="stripe-balance"></div>
+                </div>
+            </section>
+
+            <!-- Orders -->
+            <section class="panel orders-panel">
+                <div class="panel-head">
+                    <h2>Orders</h2>
+                    <div class="filters" id="filters">
+                        <button class="chip is-active" data-filter="all">All</button>
+                        <button class="chip" data-filter="paid">Awaiting dispatch</button>
+                        <button class="chip" data-filter="shipped">Shipped</button>
+                    </div>
+                </div>
+                <div id="ordersTable" class="orders-table"></div>
+                <div id="ordersEmpty" class="empty" hidden>No orders yet. They'll appear here the moment a checkout completes.</div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ── ORDER DETAIL / SHIP DRAWER ────────────────────────── -->
+    <aside id="drawer" class="drawer" hidden>
+        <div class="drawer-overlay" data-close></div>
+        <div class="drawer-panel" role="dialog" aria-label="Order detail">
+            <header class="drawer-head">
+                <span class="drawer-eyebrow">Order</span>
+                <button class="drawer-close" data-close aria-label="Close">Close</button>
+            </header>
+            <div id="drawerBody" class="drawer-body"></div>
+        </div>
+    </aside>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="portal.js"></script>
+</body>
+</html>
