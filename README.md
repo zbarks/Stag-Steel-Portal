@@ -12,26 +12,22 @@ stack (static front-end + Vercel serverless functions) — no Next.js, no PostHo
 
 ## Login
 
-I set these for you (change any time — update here *and* in Vercel):
+One system password — no username, no cookies, nothing to expire.
 
 ```
-Username:  stagadmin
 Password:  Moorfoot-Antler-7042
 ```
 
-Login is a signed, httpOnly cookie (`ss_session`, 8-hour expiry). Credentials
-are checked with a constant-time compare against the env vars below, so nothing
-is hard-coded in the shipped files.
-
----
+Set it in the `PORTAL_PASSWORD` env var (change it any time — update here and in
+Vercel, then redeploy). The password is checked server-side on every request via
+an `x-portal-key` header; it's never stored in the shipped code. The browser
+keeps it for the current tab only (sessionStorage), so closing the tab logs out.
 
 ## Environment variables (Vercel → Portal project → Settings → Env Vars)
 
 | Var | What it is | Required |
 |-----|-----------|----------|
-| `PORTAL_USERNAME` | Login username | ✅ |
-| `PORTAL_PASSWORD` | Login password | ✅ |
-| `AUTH_SECRET` | Long random string that signs the login cookie | ✅ |
+| `PORTAL_PASSWORD` | The one login password | ✅ |
 | `SUPABASE_URL` | Your Supabase project URL — **same project as the storefront** | ✅ |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key (server-side only) | ✅ |
 | `STRIPE_SECRET_KEY` | Only for the live balance panel (read-only). Leave out to hide it | ⬜ |

@@ -48,18 +48,20 @@
         }, 3200);
     }
 
+    // The system password, kept for this tab only. No cookies involved.
+    function getKey() { try { return sessionStorage.getItem('ss_key') || ''; } catch (_) { return ''; } }
+    function setKey(v) { try { v ? sessionStorage.setItem('ss_key', v) : sessionStorage.removeItem('ss_key'); } catch (_) {} }
+
     async function api(path, opts) {
-        const res = await fetch(path, Object.assign({
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-        }, opts));
+        const o = Object.assign({ headers: {} }, opts);
+        o.headers = Object.assign({ 'Content-Type': 'application/json', 'x-portal-key': getKey() }, o.headers);
+        const res = await fetch(path, o);
         const data = await res.json().catch(() => ({}));
         if (res.status === 401) {
-            // A 401 from the login endpoint means bad credentials, not an
-            // expired session — don't wipe the screen, just report it.
             if (path.indexOf('/api/login') !== -1) {
-                throw new Error(data.error || 'Incorrect username or password');
+                throw new Error(data.error || 'Incorrect password');
             }
+            setKey('');
             showLogin();
             throw new Error('Session expired');
         }
@@ -76,15 +78,18 @@
         const err = $('#loginError');
         err.hidden = true;
         btn.disabled = true; btn.textContent = 'Signing in…';
+        const pw = $('#password').value;
+        setKey(pw); // so the login request carries it via the x-portal-key header
         try {
             await api('/api/login', {
                 method: 'POST',
-                body: JSON.stringify({ username: $('#username').value, password: $('#password').value }),
+                body: JSON.stringify({ password: pw }),
             });
             $('#password').value = '';
             showApp();
             await loadDashboard();
         } catch (e) {
+            setKey('');
             err.textContent = e.message || 'Sign in failed';
             err.hidden = false;
         } finally {
@@ -93,6 +98,7 @@
     }
 
     async function doLogout() {
+        setKey('');
         try { await api('/api/logout', { method: 'POST' }); } catch (_) {}
         showLogin();
     }
