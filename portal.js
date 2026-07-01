@@ -367,6 +367,9 @@
             if (r.labelUrl) {
                 window.open(r.labelUrl, '_blank', 'noopener');
                 toast('Label created — order marked as sent');
+            } else if (r.labelBase64) {
+                openPdfBase64(r.labelBase64);
+                toast('Label created — order marked as sent');
             } else {
                 toast('Order sent to Click & Drop — generate the label there');
             }
@@ -376,6 +379,17 @@
             toast(e.message || 'Label failed', true);
             if (btn) { btn.disabled = false; btn.textContent = 'Print shipping label'; }
         }
+    }
+
+    function openPdfBase64(b64) {
+        try {
+            const clean = String(b64).replace(/^data:application\/pdf;base64,/, '');
+            const bytes = atob(clean);
+            const arr = new Uint8Array(bytes.length);
+            for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+            const blob = new Blob([arr], { type: 'application/pdf' });
+            window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+        } catch (_) { /* ignore */ }
     }
 
     async function markShipped(id) {

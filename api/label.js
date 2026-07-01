@@ -35,6 +35,7 @@ module.exports = async (req, res) => {
             ok: true,
             trackingNumber: result.trackingNumber,
             labelUrl: result.labelUrl,
+            labelBase64: result.labelBase64,
             service: serviceLabel(service),
         });
     } catch (err) {
